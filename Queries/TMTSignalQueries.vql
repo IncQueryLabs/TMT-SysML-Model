@@ -1,0 +1,25 @@
+// Signals that are sent but not received (1)
+pattern sentButNotReceivedSignals(signal : Signal){
+	find sentSignals(signal, _);
+	neg find receivedSignals(signal, _);
+}
+//Signals that are received but not sent (2)
+pattern receivedButNotSentSignals(signal : Signal){
+	neg find sentSignals(signal, _);
+	find receivedSignals(signal, _);
+}
+//Signals that are sent through a Send Signal Action
+private pattern sentSignals(signal : Signal, action : SendSignalAction){
+	SendSignalAction.signal(action, signal);
+}
+
+//Signals that are received in an action
+private pattern receivedSignals(signal : Signal, action){
+	//Directly via a reception
+	Reception.signal(action, signal);
+} or {
+	//Through an accept event action
+	AcceptEventAction.trigger.event(action, event);
+	SignalEvent.signal(event, signal);
+}
+

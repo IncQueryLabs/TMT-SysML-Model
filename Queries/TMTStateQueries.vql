@@ -1,0 +1,46 @@
+// 7. find deadlock states, i.e. incoming transitions but not outgoing
+pattern deadlockState(state : State){
+	//Simple states
+	State.incoming(state, _);	
+	neg find nonSimpleState(state);
+	neg State.outgoing(state, _);
+}  or {
+	//Composite states
+	State.incoming(state, _);	
+	neg State.outgoing(state, _);
+	State.region(state, region);
+	Region.subvertex(region, _);
+	neg find compStateWithOutgoingTransition(state);
+}
+
+pattern deadlockStateSimplified(state : State){
+	State.incoming(state, _);
+	neg FinalState(state);
+	neg State.outgoing(state, _);
+}
+
+// Composite state with owned states that pooint out of the composition, 
+// i.e. has an outgoing transition that leaves the composite states region
+private pattern compStateWithOutgoingTransition(state : State) {	
+	State.region(state, region);
+	Region.subvertex(region, subState);
+	find compositeSubStateExitsState(subState, state);
+}
+//Sub-states of a composite state that leave its region
+private pattern compositeSubStateExitsState(subState : State, state : State){
+	State.region(state, region);
+	Region.subvertex(region, subState);
+	State.outgoing(subState, transition);
+	Transition.target(transition, target);
+	Vertex.container(target, region1);
+	neg Region.state(region1, state);
+}
+//Non-simple states
+private pattern nonSimpleState(state : State){
+	//Composite state
+	State.region(state, region);
+	Region.subvertex(region, _);
+} or {
+	//Final state
+	FinalState(state);
+}

@@ -1,0 +1,149 @@
+
+// 4 Pins that are not connected to anything
+pattern UnconnectedPins(pin : Pin){
+	//No outgoing object flow
+	neg Pin.outgoing(pin, _);
+	//No incoming object flow
+	neg Pin.incoming(pin, _);
+}
+
+// 5 Pins that are not connected to parameters transitively
+pattern PinWithoutConnectedParameters(pin : Pin){
+	neg find PinsWithConnectedParameters(pin, _);
+}
+
+//6 Circular Activity call
+pattern circularActivityCall(activity : Activity){
+	//Transitive closure of activity calls
+	//Original activity is present in the call hierarchy
+	find activityCall+(activity, activity);
+}
+
+private pattern PinsWithConnectedParameters(pin : Pin, parameter : ActivityParameterNode){
+	//Transitive closure of pin-pin-Action-pin type connections
+	//Returns a set of pins, a given pin is transitively connected to
+	find connectedPins*(pin, node);
+	//Given pin is connected to an Activity Parameter
+	ActivityEdge.source(edge, node);
+	ActivityEdge.target(edge, parameter);
+	ActivityParameterNode(parameter);
+}
+
+//Maps a Pin to a connected Pin
+private pattern connectedPins(node : Pin, connectedActionPins : Pin){
+	//Connection through an Action
+	ActivityEdge.source(edge, node);
+	ActivityEdge.target(edge, connectedpin);
+	find actionPin(action, connectedpin);
+	find actionPin(action, connectedActionPins);
+	connectedpin!=connectedActionPins;
+} or {
+	//Direct connection between pins
+	ActivityEdge.source(edge, node);
+	ActivityEdge.target(edge, connectedActionPins);
+	node!=connectedActionPins;	
+}
+
+
+
+//Queries activity calls of a given activity
+private pattern activityCall(activity : Activity, calledActivity : Activity){
+	find activityNodes(activity, node);
+	CallBehaviorAction.behavior(node, calledActivity);
+}
+
+//Maps Activity nodes to their owning Activities
+private pattern activityNodes(activity : Activity, node : ActivityNode){
+	Activity.node(activity, node);
+} or {
+	Activity.node(activity, structuredNode);
+	StructuredActivityNode.node*(structuredNode, node);
+}
+
+//Maps Pins to their owning Actions
+private pattern actionPin(node : Action , pin : Pin){
+	AcceptEventAction.result(node, pin);
+} or{
+	AcceptCallAction.returnInformation(node,pin);
+}or {
+	ClearAssociationAction.object(node, pin);
+} or {
+	CreateObjectAction.result(node, pin);
+} or {
+	DestroyObjectAction.target(node, pin);
+} or {
+	InvocationAction.argument(node, pin);
+} or {
+	CallAction.result(node, pin);
+} or {
+	SendObjectAction.request(node, pin);
+} or {
+	SendObjectAction.target(node, pin);
+} or {
+	SendSignalAction.target(node, pin);
+} or {
+	LinkAction.inputValue(node, pin);
+} or{
+	ReadLinkAction.result(node, pin);
+} or {
+	OpaqueAction.inputValue(node, pin);
+} or {
+	OpaqueAction.outputValue(node, pin);
+} or {
+	RaiseExceptionAction.exception(node, pin);
+} or {
+	ReadExtentAction.result(node, pin);
+} or {
+	ReadIsClassifiedObjectAction.object(node,pin);
+} or {
+	ReadIsClassifiedObjectAction.result(node,pin);
+} or {
+	ReadLinkObjectEndAction.object(node, pin);
+} or {
+	ReadLinkObjectEndAction.result(node,pin);
+} or {
+	ReadLinkObjectEndQualifierAction.object(node, pin);
+} or {
+	ReadLinkObjectEndQualifierAction.result(node, pin);
+} or {
+	ReadSelfAction.result(node, pin);
+} or {
+	ReclassifyObjectAction.object(node,pin);
+} or {
+	ReduceAction.collection(node, pin);
+} or {
+	ReduceAction.result(node, pin);
+} or {
+	ReplyAction.replyValue(node, pin);
+} or {
+	StartClassifierBehaviorAction.object(node, pin);
+} or {
+	StructuralFeatureAction.object(node, pin);
+} or {
+	StructuredActivityNode.structuredNodeInput(node, pin);
+} or {
+	StructuredActivityNode.structuredNodeOutput(node, pin);
+} or{
+	ConditionalNode.result(node, pin);
+} or{
+	LoopNode.bodyOutput(node, pin);
+} or{
+	LoopNode.decider(node, pin);
+}or{
+	LoopNode.loopVariable(node, pin);
+}or{
+	LoopNode.loopVariableInput(node, pin);
+}or {
+	TestIdentityAction.first(node, pin);
+} or {
+	TestIdentityAction.second(node, pin);
+} or {
+	TestIdentityAction.result(node, pin);
+} or {
+	UnmarshallAction.object(node, pin);
+} or {
+	UnmarshallAction.result(node, pin);
+} or {
+	ValueSpecificationAction.result(node, pin);
+}
+

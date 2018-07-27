@@ -1,0 +1,83 @@
+// 3. Signals sent/received over a port match the port’s flow properties
+ 
+//Sent signal is not present in the port's flow properties
+pattern SentSignalNotInFlowProperties(signal : Signal, port : Port){
+	find SentSignalOverPort(signal, port);
+	neg find PortFlowPropertyTypes(port, signal);
+}
+
+//Received signal is not present in the port's flow properties
+pattern ReceivedSignalNotInFlowProperties(signal : Signal, port :Port){
+	neg find PortFlowPropertyTypes(port, signal);
+	find portSignalReceptions(port, signal);
+}
+
+//Maps sent signals to the associated port
+private pattern  SentSignalOverPort(signal : Signal, port : Port){
+	SendSignalAction.signal(action, signal);
+	SendSignalAction.onPort(action, port);
+}
+
+//Maps Flow properties to the associated ports
+private pattern PortFlowPropertyTypes(port : Port, propType : Type){
+	Port.type(port, type);
+	find allClassAttributes(type, property);
+	find sysml.FlowProperty(property, _);
+	Property.type(property, propType);
+}
+//Maps ALL (inherited) Properties to a class
+private pattern allClassAttributes(class : Class, attribute : Property){
+	find classInheritance*(class, superClass);
+	Class.ownedAttribute(superClass, attribute);
+}
+//Specifies class inheritance
+private pattern classInheritance(class : Class, superClass : Class){
+	Generalization.specific(gen, class);
+	Generalization.general(gen, superClass);
+}
+
+//Matches Ports to the signal Receptions they are associated with
+private pattern portSignalReceptions(port : Port, signal : Signal){
+	//	Signal reception Action in the Activity behavior of the owning class
+	Class.ownedAttribute(block, port);
+	Class.ownedBehavior(block, behavior);
+	Activity.node(behavior, action);
+	find signalReceptionAction(action, signal);
+} or {
+	//Signal reception Action in the Activity referenced from a state in the owning class' state machine
+	//ENTRY action
+	Class.ownedAttribute(block, port);
+	Class.ownedBehavior(block, behavior);
+	StateMachine.region(behavior, region);
+	Region.subvertex(region, state);
+	State.entry(state, entry);
+	Activity.node(entry, action);
+	find signalReceptionAction(action, signal);
+} or {
+	//Signal reception Action in the Activity referenced from a state in the owning class' state machine
+	//DO action
+	Class.ownedAttribute(block, port);
+	Class.ownedBehavior(block, behavior);
+	StateMachine.region(behavior, region);
+	Region.subvertex(region, state);
+	State.doActivity(state, entry);
+	Activity.node(entry, action);
+	find signalReceptionAction(action, signal);
+} or {
+	//Signal reception Action in the Activity referenced from a state in the owning class' state machine
+	//EXIT action
+	Class.ownedAttribute(block, port);
+	Class.ownedBehavior(block, behavior);
+	StateMachine.region(behavior, region);
+	Region.subvertex(region, state);
+	State.exit(state, entry);
+	Activity.node(entry, action);
+	find signalReceptionAction(action, signal);
+}
+
+//Maps Accept event actions to a received signal
+private pattern signalReceptionAction(action : AcceptEventAction, signal : Signal){
+	AcceptEventAction.trigger.event(action, event);
+	SignalEvent.signal(event, signal);
+}
+
