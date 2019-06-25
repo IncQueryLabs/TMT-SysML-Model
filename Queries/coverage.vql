@@ -1,0 +1,85 @@
+package iqs4mms.demo.coverage ;
+import "http://www.nomagic.com/magicdraw/UML/2.5.1";
+
+// SECTION 1: main query
+
+/* 
+ * Associates a UML package with 
+ *  - the total number of transitively contained SysML Blocks, and 
+ *  - the number of strongly and weakly covered blocks among them
+ */
+pattern packageCoverage(
+    pack: Package, 
+    totalBlocks: java Integer, 
+    stronglyCovered: java Integer, 
+    weaklyCovered: java Integer
+) {
+    totalBlocks     == count find blockInPackage(_, pack);
+    stronglyCovered == count find stronglyCoveredBlockInPackage(_, pack);
+    weaklyCovered   == count find weaklyCoveredBlockInPackage(_, pack);
+}
+
+
+// SECTION 2: custom in-house definitions for strong and weak coverage
+
+/* 
+ * Identifies elements that are strongly covered by a requirement.
+ * This definition may be customized according to in-house concept of strong coverage.
+ */
+pattern stronglyCovered(element: NamedElement) {
+    find util.sysml.sysmlRequirement_SatisfiedBy(_, element);
+} or {
+    find util.sysml.sysmlRequirement_VerifiedBy(_, element);
+} or {
+    find util.sysml.sysmlRequirement_TracedTo(_, element);
+}
+/* 
+ * Identifies elements that are NOT strongly covered, 
+ * but are reachable from a strongly covered element 
+ * using one or more custom propagation steps
+ */
+pattern weaklyCovered(element: NamedElement) {
+    find stronglyCovered(otherElement);
+    find coveragePropagates+(otherElement, element);
+    neg find stronglyCovered(element);
+}
+/* 
+ * Defines custom coverage propagation steps, where 
+ * coverage of a 'from' element automatically implies weak coverage of a 'to' element.
+ * This definition may be customized according to in-house propagation rules.
+ */
+pattern coveragePropagates(from: NamedElement, to: NamedElement) {
+    // from container to contained part
+    Property.owner(part, from);
+    Property.aggregation(part, ::composite);
+    TypedElement.type(part, to);
+} or { 
+    // from general superclassifier / block to specific block
+    Generalization.general(gen, from);
+    Generalization.specific(gen, to);
+}
+
+// SECTION 3: helper queries to assemble a report on (transitive) package contents
+
+/* 
+ * Associates SysML Blocks with UML packages directly or indirectly containing them.
+ */
+pattern blockInPackage(block: Class, pack: Package) {
+    find util.sysml.sysmlBlock(block, _);    
+    Element.owner+(block, pack);
+}
+/* 
+ * Associates strongly covered Blocks with UML packages directly or indirectly containing them.
+ */
+pattern stronglyCoveredBlockInPackage(block: Class, pack: Package) {
+    find stronglyCovered(block);    
+    find blockInPackage(block, pack);
+}
+/* 
+ * Associates weakly covered Blocks with UML packages directly or indirectly containing them.
+ */
+pattern weaklyCoveredBlockInPackage(block: Class, pack: Package) {
+    find weaklyCovered(block);    
+    find blockInPackage(block, pack);
+}
+

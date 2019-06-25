@@ -1,0 +1,97 @@
+package util.profile ;
+import "http://www.nomagic.com/magicdraw/UML/2.5.1";
+
+
+/*
+ * Matches if the parameter `general` is connected by a single
+ * generalization relation to parameter `classifier`
+ */
+pattern generalizedClassifier(classifier : Classifier, general: Classifier) {
+    Generalization.general(gen, general);
+    Generalization.specific(gen, classifier);
+}
+
+/*
+ * Collects the InstanceSpecification of the given Element having the stereotype with the given name
+ */
+pattern stereotypedElement(element : Element, domainStereotypeInstance : InstanceSpecification, stereotypeName : String) {
+    Element.appliedStereotypeInstance(element, domainStereotypeInstance);
+    InstanceSpecification.classifier(domainStereotypeInstance, domainStereotype);
+    find generalizedClassifier*(domainStereotype, superStereotype); 
+    Stereotype.name(superStereotype, stereotypeName);
+}
+
+/*
+ * Matches the value of the slot with the given name
+ */
+pattern slotValue(domainStereotypeInstance : InstanceSpecification, featureName : String, valuespec: ValueSpecification) {
+    InstanceSpecification.slot(domainStereotypeInstance, slot);
+    Slot.definingFeature.name(slot, featureName);
+    Slot.value(slot, valuespec);
+}
+
+
+package util.sysml ;
+import "http://www.nomagic.com/magicdraw/UML/2.5.1";
+
+
+
+
+/*
+ * Pattern that queries elements with the stereotype 'Block' or other stereotypes generalizing it.
+ *
+ * Parameters:
+ * element : 'Class' object with the stereotype Block.
+ * domainStereotypeInstance : Stereotype Application instance
+ */
+pattern sysmlBlock(element : Class, domainStereotypeInstance : InstanceSpecification){
+    find util.profile.stereotypedElement(element, domainStereotypeInstance, "Block");
+}
+
+/*
+ * Pattern that queries elements with the stereotype 'Requirement' or other stereotypes generalizing it.
+ *
+ * Parameters:
+ * element : 'Class' object with the stereotype Requirement.
+ * domainStereotypeInstance : Stereotype Application instance
+ */
+pattern sysmlRequirement(element : Class, domainStereotypeInstance : InstanceSpecification){
+    find util.profile.stereotypedElement(element, domainStereotypeInstance, "Requirement");
+}
+
+/*
+ * Pattern that queries the 'SatisfiedBy' attribute of elements with the stereotype 'Requirement'.
+ * 
+ * Parameters: 
+ *     element: 'Class' object with the stereotype 'Requirement'.
+ *     value : NamedElement : A value of the attribute 'SatisfiedBy'.
+ */
+pattern sysmlRequirement_SatisfiedBy(element : Class, value : NamedElement){
+    find sysmlRequirement(element, domainStereotypeInstance);
+    find util.profile.slotValue(domainStereotypeInstance, "SatisfiedBy", valuespec);
+    ElementValue.element(valuespec, value);
+}
+/*
+ * Pattern that queries the 'TracedTo' attribute of elements with the stereotype 'Requirement'.
+ * 
+ * Parameters: 
+ *     element: 'Class' object with the stereotype 'Requirement'.
+ *     value : NamedElement : A value of the attribute 'TracedTo'.
+ */
+pattern sysmlRequirement_TracedTo(element : Class, value : NamedElement){
+    find sysmlRequirement(element, domainStereotypeInstance);
+    find util.profile.slotValue(domainStereotypeInstance, "TracedTo", valuespec);
+    ElementValue.element(valuespec, value);
+}
+/*
+ * Pattern that queries the 'VerifiedBy' attribute of elements with the stereotype 'Requirement'.
+ * 
+ * Parameters: 
+ *     element: 'Class' object with the stereotype 'Requirement'.
+ *     value : NamedElement : A value of the attribute 'VerifiedBy'.
+ */
+pattern sysmlRequirement_VerifiedBy(element : Class, value : NamedElement){
+    find sysmlRequirement(element, domainStereotypeInstance);
+    find util.profile.slotValue(domainStereotypeInstance, "VerifiedBy", valuespec);
+    ElementValue.element(valuespec, value);
+}
